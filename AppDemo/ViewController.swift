@@ -7,22 +7,38 @@
 //
 
 import UIKit
+import FBSDKLoginKit
 
 class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate,
 detalleViewControllerDelegate, AgregarViewControllerDelegate {
     @IBOutlet weak var btnBoton: UIButton!
         @IBOutlet weak var tblTabla: UITableView!
     
+    @IBOutlet weak var imgFoto: UIImageView!
+    @IBOutlet weak var lblNombre: UILabel!
+    
+    
     @IBAction func btnAgregar_Click(_ sender: Any) {
       performSegue(withIdentifier: "AgregarSegue", sender: self)
     }
     
     var arreglo1 = [("Dany", 20),("Uno", 30),("tres", 40)]
-    var datos = [("Dany",30),("Jose",20),("ju",30)]
+    var datos = [("Dany",30),("Jose",20),("ju",30), ("Dany",30),("Jose",20),("ju",30), ("Dany",30),("Jose",20),("ju",30) ]
     
     var filaSeleccionada = -1
     var esEdicion = false
  
+    @IBAction func btnRefres(_ sender: Any) {
+        
+        
+     let idFacebook = FBSDKAccessToken.current().userID
+    let cadenaUrl = "http://graph.facebook.com/\(idFacebook!)/picture?type=large"
+        
+       
+        
+        imgFoto.loadPicture(url: cadenaUrl)
+        
+    }
     
     @IBAction func btnPresionado(_sender:Any){
         print("Boton presionado")
@@ -31,6 +47,10 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        print("Vista cargada")
+        imgFoto.image = UIImage(named: "gato")
+        lblNombre.text = "Gato con botas"
     }
 
     override func didReceiveMemoryWarning() {
@@ -117,16 +137,25 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     
  
     
-    let vista = tableView.dequeueReusableCell(withIdentifier: proto, for: indexPath) as! filaTableViewCell
+    let vista = tableView.dequeueReusableCell(withIdentifier: "proto1", for: indexPath) as! filaTableViewCell
     
-    if indexPath.row % 2 == 0 {
-        vista.lblIzquierda.text = datos [indexPath.row].0
-        vista.lblDerecha.text = String (datos[indexPath.row].1)
+    let idFacebook = FBSDKAccessToken.current().userID
+    let cadenaURL = "http://graph.facebook.com/\(idFacebook!)/picture?type=large"
+    
+    let url = URL(string: cadenaURL)
+    let dato: Data?
+    
+    do {
+        dato = try Data(contentsOf: url!)
+        vista.imgFoto.image = UIImage(data: dato!)
+        
     }
-    else {
-        vista.lblNom.text = datos [indexPath.row].0
-      
+    catch{
+        print("Error cargando la imagen.! \(error.localizedDescription)")
+        dato = nil
+        imgFoto.image = UIImage(named: "gato")
     }
+   
 
     
     
