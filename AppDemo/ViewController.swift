@@ -8,11 +8,16 @@
 
 import UIKit
 import FBSDKLoginKit
+import Firebase
+import FirebaseDatabase
 
 class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate,
 detalleViewControllerDelegate, AgregarViewControllerDelegate {
     @IBOutlet weak var btnBoton: UIButton!
         @IBOutlet weak var tblTabla: UITableView!
+    
+    var rootRef = FIRDatabaseReference()
+    
     
     @IBOutlet weak var imgFoto: UIImageView!
     @IBOutlet weak var lblNombre: UILabel!
@@ -25,18 +30,36 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     var arreglo1 = [("Dany", 20),("Uno", 30),("tres", 40)]
     var datos = [("Dany",30),("Jose",20),("ju",30), ("Dany",30),("Jose",20),("ju",30), ("Dany",30),("Jose",20),("ju",30) ]
     
+    var arreglo : [(nombre: String, edad: Int, genero: String, foto: String)] = []
+    
     var filaSeleccionada = -1
     var esEdicion = false
+    
+    @IBAction func btnAgregar(_ sender: Any) {
+        let valor = Int(lblNombre.text!)!
+        rootRef.child("Numeros").setValue(valor + 1)
+    }
+    
  
     @IBAction func btnRefres(_ sender: Any) {
         
         
      let idFacebook = FBSDKAccessToken.current().userID
-    let cadenaUrl = "http://graph.facebook.com/\(idFacebook!)/picture?type=large"
+   // let cadenaUrl = "http://graph.facebook.com/\(idFacebook!)/picture?type=large"
         
-       
+        do
+        {
+           // dato = try Data(contentsOf: url!)
+            imgFoto.downloadData(url: "https://graph.facebook.com/\(idFacebook)/picture?type=large")
         
-        imgFoto.loadPicture(url: cadenaUrl)
+        
+        }
+        catch{
+            print("Error cargando la imagen.\(error.localizedDescription)")
+            imgFoto.image = UIImage(named: "gato")
+        }
+        
+      //  imgFoto.loadPicture(url: cadenaUrl)
         
     }
     
@@ -51,6 +74,18 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
         print("Vista cargada")
         imgFoto.image = UIImage(named: "gato")
         lblNombre.text = "Gato con botas"
+        sincronizarData()
+        
+        rootRef = FIRDatabase.database().reference()
+        
+        
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        self.rootRef.child("Numeros").observe(.value, with: {(snap: FIRDataSnapshot) in self.lblNombre.text = "\(snap.value!)"
+        })
+        
+       
     }
 
     override func didReceiveMemoryWarning() {
@@ -67,8 +102,8 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
         view.numeroFila = filaSeleccionada
         
         view.numeroFila = filaSeleccionada
-        view.dato = datos[filaSeleccionada].0
-        view.datoNumero = datos[filaSeleccionada].1
+        view.dato = arreglo[filaSeleccionada].0
+        view.datoNumero = arreglo[filaSeleccionada].1
         
         view.delegado = self
             break
@@ -78,8 +113,8 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
             if (esEdicion)
             {
                 view.fila = filaSeleccionada
-                view.Nombre = datos[filaSeleccionada].0
-                view.Edad = datos[filaSeleccionada].1
+                view.Nombre = arreglo[filaSeleccionada].0
+                view.Edad = arreglo[filaSeleccionada].1
                 esEdicion = false
             }
             
@@ -95,7 +130,64 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
         datos [numero].1 = datos[numero].1 + 1
         tblTabla.reloadData()
     }
-   
+    
+    func sincronizarData(){
+        let url = (string: "http://kke.mx/demo/contactos.php")
+        
+        var request = URLRequest(url: URL(string: url)!, cachePolicy: URLRequest.CachePolicy.returnCacheDataElseLoad, timeoutInterval: 1000)
+        request.httpMethod = "GET"
+        
+        let session = URLSession.shared
+        
+        let task = session.dataTask(with: request, completionHandler: {data, response, error -> Void in guard (error == nil) else {
+            print("Ocurrio un error con la peticion: \(error)")
+            return
+            }
+            guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+                print("Ocurrio un error con la respuesta.")
+                return
+            }
+            if (!(statusCode >= 200 && statusCode <= 299))
+            {
+                print("Respuesta no válida")
+                return
+            }
+            let cad = String (data: data!, encoding: .utf8)
+            print("Response: \(response!.description)")
+            print("erro: \(error)")
+            print("data: \(cad!)")
+            
+            var parsedResult: Any!
+            do{
+                parsedResult = try JSONSerialization.jsonObject(with: data!, options: .allowFragments)
+            }
+            catch{
+                parsedResult = nil
+                print("Error: \(error)")
+                return
+            }
+            guard let datos = (parsedResult as? Dictionary<String, Any?>)?["datos"] as! [Dictionary<String, Any>]! else {
+                print("Error: \(error)")
+                return
+            }
+            self.arreglo.removeAll()
+            
+            for d in datos{
+                let nombre = (d["nombre"] as! String)
+                let edad = (d["edad"] as! Int)
+                let foto = d["foto"] as! String
+                let genero = d["genero"] as! String
+                
+                self.arreglo.append((nombre: nombre, edad: edad, genero: genero, foto: foto))
+            }
+            self.tblTabla.reloadData()
+          
+            })
+        task.resume()
+        
+    }
+
+
 
 
 // MARK: -TableDelegate
@@ -103,10 +195,11 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
 
  {
-    return datos.count
+    return arreglo.count
 }
 
     func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]?{
+        
         let eliminar = UITableViewRowAction(style: .destructive, title: "Borrar", handler: borrarFila)
         let editar = UITableViewRowAction(style: .normal, title: "Editar", handler: editarFila )
         return [eliminar,editar]
@@ -133,19 +226,34 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     
  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
  {
-    let proto = (indexPath.row % 2 == 0) ? "proto1": "proto2"
+    let view = tableView.dequeueReusableCell(withIdentifier: "proto1") as! filaTableViewCell
     
+    //let proto = (indexPath.row % 2 == 0) ? "proto1": "proto2"
+    
+    let dato = arreglo[indexPath.row]
  
     
-    let vista = tableView.dequeueReusableCell(withIdentifier: "proto1", for: indexPath) as! filaTableViewCell
+    //let vista = tableView.dequeueReusableCell(withIdentifier: "proto1", for: indexPath) as! filaTableViewCell
+    
+    view.lblIzquierda.text = "\(dato.nombre)"
+    view.lblDerecha.text = "\(dato.edad)"
     
     let idFacebook = FBSDKAccessToken.current().userID
     let cadenaURL = "http://graph.facebook.com/\(idFacebook!)/picture?type=large"
     
-    let url = URL(string: cadenaURL)
-    let dato: Data?
+   // let url = URL(string: cadenaURL)
+    // let dato: Data?
     
-    do {
+    if dato.genero == "m"
+    {
+        view.imgFoto.image = UIImage(named: "user_female")
+    }
+    else {
+        view.imgFoto.image = UIImage(named: "user_male")
+    }
+    view.imgFoto.downloadData(url: dato.foto)
+    
+    /*do {
         dato = try Data(contentsOf: url!)
         vista.imgFoto.image = UIImage(data: dato!)
         
@@ -154,13 +262,13 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
         print("Error cargando la imagen.! \(error.localizedDescription)")
         dato = nil
         imgFoto.image = UIImage(named: "gato")
-    }
+    }*/
    
 
     
     
     
-    return vista
+    return view
 }
     
 

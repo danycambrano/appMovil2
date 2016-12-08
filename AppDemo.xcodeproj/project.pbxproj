@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		08086DAD1DF9E9D9003BABD8 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 08086DAC1DF9E9D9003BABD8 /* GoogleService-Info.plist */; };
 		08096E411DF5D80F002CC950 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08096E401DF5D80F002CC950 /* AppDelegate.swift */; };
 		08096E431DF5D80F002CC950 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08096E421DF5D80F002CC950 /* ViewController.swift */; };
 		08096E461DF5D80F002CC950 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 08096E441DF5D80F002CC950 /* Main.storyboard */; };
@@ -21,6 +22,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		08086DAC1DF9E9D9003BABD8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		08096E3D1DF5D80F002CC950 /* AppDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AppDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		08096E401DF5D80F002CC950 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		08096E421DF5D80F002CC950 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -82,6 +84,7 @@
 				080D00D91DF71A63002A3892 /* detalleViewController.swift */,
 				0855E8F61DF739BD00C9A1D2 /* AgregarViewController.swift */,
 				087269341DF8848500992072 /* LoginViewController.swift */,
+				08086DAC1DF9E9D9003BABD8 /* GoogleService-Info.plist */,
 				087269361DF8AB6A00992072 /* pruebaLibrary.playground */,
 				087269371DF8B6F700992072 /* UIImageView.swift */,
 			);
@@ -168,6 +171,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				08096E4B1DF5D80F002CC950 /* LaunchScreen.storyboard in Resources */,
+				08086DAD1DF9E9D9003BABD8 /* GoogleService-Info.plist in Resources */,
 				08096E481DF5D80F002CC950 /* Assets.xcassets in Resources */,
 				08096E461DF5D80F002CC950 /* Main.storyboard in Resources */,
 			);
