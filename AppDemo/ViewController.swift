@@ -30,7 +30,9 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     var arreglo1 = [("Dany", 20),("Uno", 30),("tres", 40)]
     var datos = [("Dany",30),("Jose",20),("ju",30), ("Dany",30),("Jose",20),("ju",30), ("Dany",30),("Jose",20),("ju",30) ]
     
-    var arreglo : [(nombre: String, edad: Int, genero: String, foto: String)] = []
+  //  var arreglo : [(nombre: String, edad: Int, genero: String, foto: String)] = []
+    
+    var arreglo : [Persona] = [Persona]()
     
     var filaSeleccionada = -1
     var esEdicion = false
@@ -42,14 +44,20 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     
  
     @IBAction func btnRefres(_ sender: Any) {
+      
+        let idFacebook = FBSDKAccessToken.current().userID
+            let cadenaUrl = "http://graph.facebook.com/\(idFacebook!)/picture?type=large"
+            
+            
+                
+                           imgFoto.loadPicture(url: cadenaUrl)
         
-        
-     let idFacebook = FBSDKAccessToken.current().userID
+     /*let idFacebook = FBSDKAccessToken.current().userID
    // let cadenaUrl = "http://graph.facebook.com/\(idFacebook!)/picture?type=large"
         
         do
         {
-           // dato = try Data(contentsOf: url!)
+       //     dato = try Data(contentsOf: url!)
             imgFoto.downloadData(url: "https://graph.facebook.com/\(idFacebook)/picture?type=large")
         
         
@@ -57,10 +65,11 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
         catch{
             print("Error cargando la imagen.\(error.localizedDescription)")
             imgFoto.image = UIImage(named: "gato")
-        }
+        }*/
         
-      //  imgFoto.loadPicture(url: cadenaUrl)
+       // imgFoto.loadPicture(url: cadenaUrl)
         
+        sincronizarData()
     }
     
     @IBAction func btnPresionado(_sender:Any){
@@ -74,9 +83,12 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
         print("Vista cargada")
         imgFoto.image = UIImage(named: "gato")
         lblNombre.text = "Gato con botas"
-        sincronizarData()
+     
         
         rootRef = FIRDatabase.database().reference()
+        
+        arreglo = Persona.selectTodos()
+        tblTabla.reloadData()
         
         
     }
@@ -102,8 +114,11 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
         view.numeroFila = filaSeleccionada
         
         view.numeroFila = filaSeleccionada
-        view.dato = arreglo[filaSeleccionada].0
-        view.datoNumero = arreglo[filaSeleccionada].1
+        //view.dato = arreglo[filaSeleccionada].nombre
+        //view.datoNumero = arreglo[filaSeleccionada].edad
+     
+     view.dato = arreglo[filaSeleccionada].nombre!
+     view.datoNumero = Int(arreglo[filaSeleccionada].edad)
         
         view.delegado = self
             break
@@ -113,8 +128,12 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
             if (esEdicion)
             {
                 view.fila = filaSeleccionada
-                view.Nombre = arreglo[filaSeleccionada].0
-                view.Edad = arreglo[filaSeleccionada].1
+          //      view.Nombre = arreglo[filaSeleccionada].nombre
+            //    view.Edad = arreglo[filaSeleccionada].edad
+                
+                view.Nombre = arreglo[filaSeleccionada].nombre!
+                view.Edad = Int(arreglo[filaSeleccionada].edad)
+                
                 esEdicion = false
             }
             
@@ -132,7 +151,7 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     }
     
     func sincronizarData(){
-        let url = (string: "http://kke.mx/demo/contactos.php")
+        let url = (string: "http://kke.mx/demo/contactos2.php")
         
         var request = URLRequest(url: URL(string: url)!, cachePolicy: URLRequest.CachePolicy.returnCacheDataElseLoad, timeoutInterval: 1000)
         request.httpMethod = "GET"
@@ -154,7 +173,7 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
             }
             let cad = String (data: data!, encoding: .utf8)
             print("Response: \(response!.description)")
-            print("erro: \(error)")
+            print("error: \(error)")
             print("data: \(cad!)")
             
             var parsedResult: Any!
@@ -172,14 +191,21 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
             }
             self.arreglo.removeAll()
             
-            for d in datos{
+            let (agregados, modificados, errores) = Persona.agregarTodos(datos: datos)
+            
+            print("se agregaron \(agregados) registros; modificaron \(modificados); \(errores) registros de error")
+            
+          /*  for d in datos{
                 let nombre = (d["nombre"] as! String)
                 let edad = (d["edad"] as! Int)
                 let foto = d["foto"] as! String
                 let genero = d["genero"] as! String
                 
                 self.arreglo.append((nombre: nombre, edad: edad, genero: genero, foto: foto))
-            }
+            }*/
+            self.arreglo = Persona.selectTodos()
+            print("se leyeron \(self.arreglo.count) registros")
+            
             self.tblTabla.reloadData()
           
             })
@@ -200,6 +226,8 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
 
     func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]?{
         
+        
+        
         let eliminar = UITableViewRowAction(style: .destructive, title: "Borrar", handler: borrarFila)
         let editar = UITableViewRowAction(style: .normal, title: "Editar", handler: editarFila )
         return [eliminar,editar]
@@ -210,6 +238,14 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     {
         datos.remove(at: indexPath.row)
         tblTabla.reloadData()
+        
+        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+        context.delete(self.arreglo[indexPath.row])
+        self.arreglo.remove(at: indexPath.row)
+        
+        self.tblTabla.deleteRows(at: [indexPath], with: .fade)
+        
+        (UIApplication.shared.delegate as! AppDelegate).saveContext()
     }
     func editarFila(sender: UITableViewRowAction, indexPath: IndexPath)
     {
@@ -228,14 +264,19 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
  {
     let view = tableView.dequeueReusableCell(withIdentifier: "proto1") as! filaTableViewCell
     
+    
+    
     //let proto = (indexPath.row % 2 == 0) ? "proto1": "proto2"
     
     let dato = arreglo[indexPath.row]
+    dato.edad = Int16(indexPath.row)
+    
+    //(UIApplication)
  
     
     //let vista = tableView.dequeueReusableCell(withIdentifier: "proto1", for: indexPath) as! filaTableViewCell
     
-    view.lblIzquierda.text = "\(dato.nombre)"
+    view.lblIzquierda.text = "\(dato.nombre!)"
     view.lblDerecha.text = "\(dato.edad)"
     
     let idFacebook = FBSDKAccessToken.current().userID
@@ -251,7 +292,7 @@ detalleViewControllerDelegate, AgregarViewControllerDelegate {
     else {
         view.imgFoto.image = UIImage(named: "user_male")
     }
-    view.imgFoto.downloadData(url: dato.foto)
+    view.imgFoto.downloadData(url: dato.foto!)
     
     /*do {
         dato = try Data(contentsOf: url!)
